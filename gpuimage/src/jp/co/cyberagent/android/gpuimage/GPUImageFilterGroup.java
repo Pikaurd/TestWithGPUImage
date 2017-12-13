@@ -213,7 +213,7 @@ public class GPUImageFilterGroup extends GPUImageFilter {
 
             // read pixel
 //            GLES20.glReadPixels(0, );
-            System.out.println("Haha");
+//            System.out.println("Haha");
         }
      }
 

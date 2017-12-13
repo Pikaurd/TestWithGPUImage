@@ -24,16 +24,21 @@ import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
 import android.media.MediaPlayer;
+import android.opengl.EGL14;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView.Renderer;
 import android.util.Log;
 import android.view.Surface;
 
+import com.android.grafika.TextureMovieEncoder;
+
 import jp.co.cyberagent.android.gpuimage.util.TextureRotationUtil;
 
 import javax.microedition.khronos.egl.EGLConfig;
 import javax.microedition.khronos.opengles.GL10;
+
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -60,6 +65,7 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
 
     public final Object mSurfaceChangedWaiter = new Object();
 
+
     private int mGLTextureId = NO_IMAGE;
     private SurfaceTexture mSurfaceTexture = null;
     private final FloatBuffer mGLCubeBuffer;
@@ -83,7 +89,16 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
     private float mBackgroundGreen = 0;
     private float mBackgroundBlue = 0;
 
-    public GPUImageRenderer(final GPUImageFilter filter) {
+    private boolean mRecordingEnabled = false;
+    private TextureMovieEncoder mVideoEncoder;
+    private int mRecordingStatus = -1;
+    public File mOutputFile;
+
+    private static final int RECORDING_OFF = 0;
+    private static final int RECORDING_ON = 1;
+    private static final int RECORDING_RESUMED = 2;
+
+    public GPUImageRenderer(final GPUImageFilter filter, TextureMovieEncoder movieEncoder) {
         mFilter = filter;
         mRunOnDraw = new LinkedList<Runnable>();
         mRunOnDrawEnd = new LinkedList<Runnable>();
@@ -98,6 +113,8 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
                 .asFloatBuffer();
         mGLTextureBuffer.put(TEXTURE_NO_ROTATION).position(0);
         setRotation(Rotation.NORMAL, false, false);
+
+        mVideoEncoder = movieEncoder;
     }
 
     @Override
@@ -105,6 +122,13 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
         GLES20.glClearColor(mBackgroundRed, mBackgroundGreen, mBackgroundBlue, 1);
         GLES20.glDisable(GLES20.GL_DEPTH_TEST);
         mFilter.init();
+
+        mRecordingEnabled = mVideoEncoder.isRecording();
+        if (mRecordingEnabled) {
+            mRecordingStatus = RECORDING_RESUMED;
+        } else {
+            mRecordingStatus = RECORDING_OFF;
+        }
     }
 
     @Override
@@ -153,11 +177,59 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
 //                    }
 //                }
 //        }
+
+
+        // -----
+        foFrame();
+        // -----
+
         mFilter.onDraw(mGLTextureId, mGLCubeBuffer, mGLTextureBuffer);
         runAll(mRunOnDrawEnd);
 
-
 //        Log.d("TAG", "videoTextureTransform=" + Arrays.toString(videoTextureTransform));
+
+
+        // end
+    }
+
+    private void foFrame() {
+        if (mRecordingEnabled) {
+
+            switch (mRecordingStatus) {
+                case RECORDING_OFF:
+                    // start recording
+                    mVideoEncoder.startRecording(new TextureMovieEncoder.EncoderConfig(
+                            mOutputFile, 640, 480, 1000000, EGL14.eglGetCurrentContext()));
+                    mRecordingStatus = RECORDING_ON;
+                    break;
+                case RECORDING_RESUMED:
+                    mVideoEncoder.updateSharedContext(EGL14.eglGetCurrentContext());
+                    mRecordingStatus = RECORDING_ON;
+                    break;
+                case RECORDING_ON:
+                    // yay
+                    break;
+                default:
+                    throw new RuntimeException("unknown status " + mRecordingStatus);
+            }
+        } else {
+            switch (mRecordingStatus) {
+                case RECORDING_ON:
+                case RECORDING_RESUMED:
+                    // stop recording
+                    mVideoEncoder.stopRecording();
+                    mRecordingStatus = RECORDING_OFF;
+                    break;
+                case RECORDING_OFF:
+                    // yay
+                    break;
+                default:
+                    throw new RuntimeException("unknown status " + mRecordingStatus);
+            }
+        }
+        mVideoEncoder.setTextureId(mGLTextureId);
+        mVideoEncoder.frameAvailable(mSurfaceTexture);
+
     }
 
     /**
@@ -440,5 +512,12 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
         synchronized (mRunOnDrawEnd) {
             mRunOnDrawEnd.add(runnable);
         }
+    }
+
+    /**
+     * Notifies the renderer that we want to stop or start recording.
+     */
+    public void changeRecordingState(boolean isRecording) {
+        mRecordingEnabled = isRecording;
     }
 }

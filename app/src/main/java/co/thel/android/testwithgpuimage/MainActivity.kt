@@ -11,7 +11,9 @@ import android.widget.ToggleButton
 import jp.co.cyberagent.android.gpuimage.GPUImage
 import jp.co.cyberagent.android.gpuimage.GPUImageFilter
 import jp.co.cyberagent.android.gpuimage.GPUImageFilterGroup
+import jp.co.cyberagent.android.gpuimage.Rotation
 import kotlinx.android.synthetic.main.activity_main.*
+import java.io.File
 
 
 class MainActivity : AppCompatActivity() {
@@ -59,8 +61,11 @@ class MainActivity : AppCompatActivity() {
     fun toggleButtonAction(view: View) {
         val button = view as ToggleButton
         println("isChecked: ${button.isChecked}")
-        surfaceView.queueEvent(Runnable {
-
+        val outputFile = File("/sdcard/Download/output.mp4")
+        mGPUImage!!.renderer!!.mOutputFile = outputFile
+        mGPUImage?.setRotation(Rotation.ROTATION_90)
+        surfaceView.queueEvent({
+            mGPUImage?.renderer?.changeRecordingState(button.isChecked)
         })
     }
 

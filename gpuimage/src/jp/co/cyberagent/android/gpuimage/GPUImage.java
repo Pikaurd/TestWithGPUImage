@@ -39,6 +39,8 @@ import android.provider.MediaStore;
 import android.view.Display;
 import android.view.WindowManager;
 
+import com.android.grafika.TextureMovieEncoder;
+
 import java.io.*;
 import java.net.URL;
 import java.util.List;
@@ -56,6 +58,8 @@ public class GPUImage {
     private Bitmap mCurrentBitmap;
     private ScaleType mScaleType = ScaleType.CENTER_CROP;
 
+    private static TextureMovieEncoder sVideoEncoder = new TextureMovieEncoder();
+
     /**
      * Instantiates a new GPUImage object.
      *
@@ -68,7 +72,7 @@ public class GPUImage {
 
         mContext = context;
         mFilter = new GPUImageFilter();
-        mRenderer = new GPUImageRenderer(mFilter);
+        mRenderer = new GPUImageRenderer(mFilter, sVideoEncoder);
     }
 
     /**
@@ -301,7 +305,7 @@ public class GPUImage {
             }
         }
 
-        GPUImageRenderer renderer = new GPUImageRenderer(mFilter);
+        GPUImageRenderer renderer = new GPUImageRenderer(mFilter, sVideoEncoder);
         renderer.setRotation(Rotation.NORMAL,
                 mRenderer.isFlippedHorizontally(), mRenderer.isFlippedVertically());
         renderer.setScaleType(mScaleType);
@@ -338,7 +342,7 @@ public class GPUImage {
         if (filters.isEmpty()) {
             return;
         }
-        GPUImageRenderer renderer = new GPUImageRenderer(filters.get(0));
+        GPUImageRenderer renderer = new GPUImageRenderer(filters.get(0), sVideoEncoder);
         renderer.setImageBitmap(bitmap, false);
         PixelBuffer buffer = new PixelBuffer(bitmap.getWidth(), bitmap.getHeight());
         buffer.setRenderer(renderer);
@@ -350,6 +354,10 @@ public class GPUImage {
         }
         renderer.deleteImage();
         buffer.destroy();
+    }
+
+    public GPUImageRenderer getRenderer() {
+        return mRenderer;
     }
 
     /**
