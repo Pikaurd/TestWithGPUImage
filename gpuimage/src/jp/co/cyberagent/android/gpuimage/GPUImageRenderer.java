@@ -178,12 +178,12 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
 //                }
 //        }
 
+        mFilter.onDraw(mGLTextureId, mGLCubeBuffer, mGLTextureBuffer);
 
         // -----
         foFrame();
         // -----
 
-        mFilter.onDraw(mGLTextureId, mGLCubeBuffer, mGLTextureBuffer);
         runAll(mRunOnDrawEnd);
 
 //        Log.d("TAG", "videoTextureTransform=" + Arrays.toString(videoTextureTransform));
@@ -199,7 +199,7 @@ public class GPUImageRenderer implements Renderer, PreviewCallback {
                 case RECORDING_OFF:
                     // start recording
                     mVideoEncoder.startRecording(new TextureMovieEncoder.EncoderConfig(
-                            mOutputFile, 640, 480, 1000000, EGL14.eglGetCurrentContext()));
+                            mOutputFile, 1280, 720, 2500000, EGL14.eglGetCurrentContext()));
                     mRecordingStatus = RECORDING_ON;
                     break;
                 case RECORDING_RESUMED:
