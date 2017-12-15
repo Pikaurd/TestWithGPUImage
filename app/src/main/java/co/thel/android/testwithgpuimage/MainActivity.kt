@@ -7,9 +7,11 @@ import android.opengl.GLSurfaceView
 import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.View
 import android.widget.ToggleButton
+import co.thel.android.audio.AudioCodec
 import jp.co.cyberagent.android.gpuimage.*
 import jp.co.cyberagent.android.utils.CameraHelper
 import kotlinx.android.synthetic.main.activity_main.*
@@ -35,10 +37,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setup() {
-//        val filterGroup = GPUImageFilterGroup()
-////        filterGroup.addFilter(GPUImageFilter())
-//        filterGroup.addFilter(GPUImageColorInvertFilter())
-
         surfaceView.setEGLContextClientVersion(2)
         assert(surfaceView != null)
 
@@ -51,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         var cameraResolutions = cameraParams.supportedPictureSizes
         val sizes: List<Pair<Int, Int>> = cameraResolutions
                 .map { Pair(it.width, it.height) }
-                .filter { it.second.toFloat() / it.first.toFloat() == 9/16.toFloat() }
+                .filter { it.second.toFloat() / it.first.toFloat() == 9 / 16.toFloat() }
 
         Log.d(TAG, "camera size: ${sizes}")
         cameraParams.setPictureSize(1280, 720)
@@ -87,4 +85,46 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    fun buttonAction(view: View) {
+        val audioPath = "/sdcard/Download/07.m4a"
+        val outputPath = "/sdcard/Download/07.pcm"
+        Log.i(TAG, "convert pcm")
+        val listener = object : AudioCodec.AudioDecodeListener {
+            override fun decodeOver() {
+                Log.i(TAG, "Decode finished. Target: $outputPath")
+            }
+
+            override fun decodeFail() {
+                Log.i(TAG, "Decode failed")
+            }
+        }
+        AudioCodec.getPCMFromAudio(audioPath, outputPath, listener)
+    }
+
+    fun toAACAction(view: View) {
+        val audioPath = "/sdcard/Download/09.pcm"
+        val outputPath = "/sdcard/Download/09.aac"
+        AudioCodec.PCM2AAC(audioPath, outputPath)
+    }
+
+    fun mergeAction(view: View) {
+        val cacheFolder = "/sdcard/Download"
+        val audioPath0 = "/sdcard/Download/07.m4a"
+        val audioPath1 = "/sdcard/Download/09.mp3"
+        val outputPath = "/sdcard/Download/merge.m4a"
+        Log.i(TAG, "convert pcm")
+        val listener = object : AudioCodec.AudioDecodeListener {
+            override fun decodeOver() {
+                Log.i(TAG, "Decode finished. Target: $outputPath")
+            }
+
+            override fun decodeFail() {
+                Log.i(TAG, "Decode failed")
+            }
+        }
+        AudioCodec.audioMix(cacheFolder,
+                audioPath0, 0.1f,
+                audioPath1, 1.0f,
+                outputPath, listener)
+    }
 }
