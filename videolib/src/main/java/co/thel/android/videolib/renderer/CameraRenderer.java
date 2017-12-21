@@ -7,6 +7,7 @@ import android.opengl.EGL14;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.opengl.GLSurfaceView;
+import android.util.Log;
 import android.view.MotionEvent;
 
 import com.android.grafika.TextureMovieEncoder;
@@ -150,6 +151,7 @@ public class CameraRenderer implements GLSurfaceView.Renderer {
     public void onDrawFrame(GL10 gl10) {
         /**更新界面中的数据*/
         mSurfaceTextrue.updateTexImage();
+        Log.d("onDrawFrame: ", String.valueOf(System.currentTimeMillis()));
 
         EasyGlUtils.bindFrameTexture(fFrame[0],fTexture[0]);
         GLES20.glViewport(0,0,mPreviewWidth,mPreviewHeight);

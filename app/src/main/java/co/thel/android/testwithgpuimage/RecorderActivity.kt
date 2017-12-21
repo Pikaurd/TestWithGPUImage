@@ -40,13 +40,17 @@ class RecorderActivity : AppCompatActivity() {
         setContentView(R.layout.activity_recorder)
 
         Constants.getInstance().context = applicationContext
+        executorService.execute({
+            Thread.sleep(100)
+
+            cameraView.changeBeautyLevel(0)
+        })
     }
 
 
     fun toggleAction(view: View) {
 //        cameraView.switchCamera()
         if (!recordFlag) {
-            cameraView.changeBeautyLevel(0)
             executorService.execute(recorderRunnable)
         }
     }
